@@ -26,6 +26,21 @@ Feito com Electron; a interface usa Preact + htm (sem etapa de build).
 Seguem a mesma regra do Prism Launcher: só podem ser criadas depois de adicionar uma conta Microsoft que
 tenha o Minecraft: Java Edition. Servem para jogar sem internet, em LAN e em servidores no modo offline.
 
+## Baixar
+Na página de [lançamentos](https://github.com/JhonyGLF/tessera-launcher/releases/latest):
+- **`Tessera-Launcher-Setup-<versão>.exe`** — instalador. **Recomendado**: se atualiza sozinho.
+- **`Tessera-Launcher-<versão>-portatil.exe`** — roda sem instalar; avisa quando há versão nova, mas
+  a atualização é manual.
+
+O `.exe` ainda não tem assinatura digital, então o Windows pode mostrar "O Windows protegeu o
+computador". Clique em **Mais informações → Executar assim mesmo**. O código está todo aqui para
+quem quiser conferir.
+
+## Atualizações
+O launcher procura versões novas nos lançamentos deste repositório ao abrir e a cada 6 horas.
+O arquivo baixado só é aceito se o hash (sha512) bater com o publicado. Quando a versão nova está
+pronta, aparece **"Atualização pronta — Reiniciar"** na barra lateral (e em Configurações › Sobre).
+
 ## Testar
 Precisa do [Node.js](https://nodejs.org) instalado.
 
@@ -41,6 +56,20 @@ pastas temporárias, sem tocar nos seus dados. Ficam em `testes/*.teste.js`.
 - Ou no terminal: `npm run build`
 
 Saída na pasta `dist`: um `.exe` portátil e um instalador.
+
+
+## Publicar uma versão nova
+1. Suba o número em `package.json` → `"version"` (ex.: `1.0.0` → `1.1.0`).
+2. Rode `npm run testar` (tudo precisa passar) e gere os arquivos com `gerar-exe.bat`.
+3. Faça o commit e publique (precisa do [GitHub CLI](https://cli.github.com) logado):
+   ```
+   git push
+   gh release create v1.1.0 --title "Tessera Launcher 1.1.0" --notes "O que mudou..." ^
+     dist/Tessera-Launcher-Setup-1.1.0.exe dist/Tessera-Launcher-Setup-1.1.0.exe.blockmap ^
+     dist/latest.yml dist/Tessera-Launcher-1.1.0-portatil.exe
+   ```
+   O `latest.yml` e o `.blockmap` são obrigatórios: é por eles que os launchers instalados encontram e
+   conferem a versão nova.
 
 ## Onde ficam os arquivos
 - `%APPDATA%\.tessera\` — jogo: `versions/`, `libraries/`, `assets/`, `runtime/` (Java) compartilhados,
@@ -71,3 +100,8 @@ downloads continuam lá. Se algum arquivo estiver em uso, o launcher usa a pasta
 
 ## Se o `npm start` abrir e fechar na hora pelo terminal do VS Code
 O VS Code define a variável `ELECTRON_RUN_AS_NODE`. Rode pelo `iniciar.bat` ou por um terminal fora do VS Code.
+
+## Licença
+[GPL-3.0](LICENSE). Você pode usar, estudar, modificar e redistribuir o Tessera; versões modificadas
+distribuídas precisam manter o código aberto sob a mesma licença. As fontes Pixelify Sans e VT323 são
+da SIL Open Font License 1.1. Minecraft é marca registrada da Mojang AB; este projeto não é oficial.
