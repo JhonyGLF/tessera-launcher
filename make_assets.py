@@ -1,5 +1,5 @@
 """Gera os assets do projeto:
-- ícone (mosaico de ladrilhos formando um "T")
+- ícone (um "T" de ladrilhos arredondados, arte lisa)
 - textura de pedra escura do fundo da janela
 - logo "TESSERA" em pedra 3D (no estilo do logo do Minecraft)
 - ícones de instância (assets/icones/), ícones de loader (assets/loaders/),
@@ -43,40 +43,77 @@ for _ in range(9):                        # pontinhos de sculk brilhando
     fundo.putpixel((rng.randrange(32), rng.randrange(32)), hex2rgb(rng.choice(SCULK)))
 fundo.save("assets/tile-deepslate.png")
 
-# ---------- Ícone: mosaico de ladrilhos formando um "T" (tessera = ladrilho de mosaico) ----------
-# 3x3 ladrilhos de 4x4 px separados por rejunte de 1 px. Os do "T" brilham em ciano (sculk);
-# os outros são pedras escuras de tons diferentes, como num mosaico de verdade.
-rng = random.Random(21)
-icone = Image.new("RGBA", (16, 16), hex2rgb("#0b0a10"))
-T_LADRILHOS = {(0, 0), (0, 1), (0, 2), (1, 1), (2, 1)}
-CIANO = {"base": ["#2fd3d0", "#29c4c1", "#36dcd9"], "luz": "#6ae9e5", "sombra": "#138a87"}
-ESCUROS = [
-    {"base": ["#2b2b33", "#26262d", "#30303a"], "luz": "#40404c", "sombra": "#17171c"},  # ardósia
-    {"base": ["#2e2540", "#2a2239", "#332a47"], "luz": "#463a5c", "sombra": "#191324"},  # ametista escura
-    {"base": ["#1f2c2e", "#1b2729", "#233234"], "luz": "#33464a", "sombra": "#101819"},  # pedra azulada
-]
-for lin in range(3):
-    for col in range(3):
-        paleta = CIANO if (lin, col) in T_LADRILHOS else ESCUROS[(lin * 3 + col) % len(ESCUROS)]
-        x0, y0 = 1 + col * 5, 1 + lin * 5
-        for y in range(4):
-            for x in range(4):
-                if y == 0 or x == 0:
-                    cor = paleta["luz"]           # brilho em cima e à esquerda
-                elif y == 3 or x == 3:
-                    cor = paleta["sombra"]        # sombra embaixo e à direita
-                else:
-                    cor = rng.choice(paleta["base"])
-                icone.putpixel((x0 + x, y0 + y), hex2rgb(cor))
-for i in range(16):                      # contorno de 1 pixel
-    for p in ((i, 0), (i, 15), (0, i), (15, i)):
-        icone.putpixel(p, hex2rgb("#050507"))
+# ---------- Ícone: "T" de ladrilhos arredondados (tessera = ladrilho de mosaico), arte lisa ----------
+# Desenhado em 1024 px com antisserrilhado e reduzido para os tamanhos do Windows.
+from PIL import ImageDraw, ImageFilter, ImageChops
+LI = 1024
 
-icone.resize((512, 512), Image.NEAREST).save("assets/icon.png")
+def _rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+def _degrade(cores, angulo, tam):
+    w, h = tam
+    y, x = np.mgrid[0:h, 0:w].astype(float)
+    a = np.deg2rad(angulo)
+    t = x * np.cos(a) + y * np.sin(a)
+    t = (t - t.min()) / max(1e-9, t.max() - t.min())
+    rgb = np.zeros((h, w, 3))
+    for c in range(3):
+        rgb[..., c] = np.interp(t, np.linspace(0, 1, len(cores)), [_rgb(k)[c] for k in cores])
+    return Image.fromarray(rgb.astype(np.uint8), "RGB").convert("RGBA")
+
+def _arredondado(caixa, raio, esc=4):
+    m = Image.new("L", (LI * esc, LI * esc), 0)
+    x0, y0, x1, y1 = caixa
+    ImageDraw.Draw(m).rounded_rectangle([x0 * esc, y0 * esc, x1 * esc - 1, y1 * esc - 1], radius=raio * esc, fill=255)
+    return m.resize((LI, LI), Image.LANCZOS)
+
+def _pintar(base, camada, mascara):
+    camada = camada.copy()
+    camada.putalpha(ImageChops.multiply(camada.getchannel("A"), mascara))
+    return Image.alpha_composite(base, camada)
+
+def _cor(h):
+    return Image.new("RGBA", (LI, LI), _rgb(h) + (255,))
+
+# fundo: quadrado arredondado azul-ardósia, aro claro sutil e luz no topo
+fundo_m = _arredondado((40, 40, LI - 40, LI - 40), 220)
+icone = _pintar(Image.new("RGBA", (LI, LI), (0, 0, 0, 0)), _degrade(["#20263a", "#121521", "#0b0d15"], 90, (LI, LI)), fundo_m)
+aro = ImageChops.subtract(fundo_m, _arredondado((54, 54, LI - 54, LI - 54), 206))
+icone = _pintar(icone, _cor("#8fd9ff"), aro.point(lambda v: v * 90 // 255))
+luz_topo = _degrade(["#2a2a2a", "#000000"], 90, (LI, LI)).convert("L")
+icone = _pintar(icone, _cor("#ffffff"), ImageChops.multiply(fundo_m, luz_topo).point(lambda v: v * 40 // 255))
+
+# o "T": 3 ladrilhos na barra e 2 na haste, ciano (sculk), cada um com degradê e reflexo
+LADRILHOS = [
+    (232, 250, 412, 430, ["#9af7f4", "#2fd3d0", "#147d7b"]),
+    (422, 250, 602, 430, ["#b5fffc", "#3fe0dc", "#178f8c"]),
+    (612, 250, 792, 430, ["#9af7f4", "#2fd3d0", "#147d7b"]),
+    (422, 440, 602, 620, ["#86eeea", "#26c2bf", "#106f6d"]),
+    (422, 630, 602, 810, ["#74e3df", "#1fb0ad", "#0c6260"]),
+]
+todos = Image.new("L", (LI, LI), 0)
+for x0, y0, x1, y1, _ in LADRILHOS:
+    todos = ImageChops.lighter(todos, _arredondado((x0, y0, x1, y1), 34))
+aura = todos.filter(ImageFilter.GaussianBlur(60)).point(lambda v: min(255, int(v * 1.3)))
+camada = Image.new("RGBA", (LI, LI), _rgb("#2fd3d0") + (0,)); camada.putalpha(aura)
+icone = Image.alpha_composite(icone, camada)
+sombra_t = Image.new("L", (LI, LI), 0); sombra_t.paste(todos, (0, 18))
+sombra_t = sombra_t.filter(ImageFilter.GaussianBlur(20)).point(lambda v: v * 170 // 255)
+camada = Image.new("RGBA", (LI, LI), (0, 0, 0, 0)); camada.putalpha(sombra_t)
+icone = Image.alpha_composite(icone, camada)
+for x0, y0, x1, y1, cores in LADRILHOS:
+    pedaco = Image.new("RGBA", (LI, LI), (0, 0, 0, 0))
+    pedaco.paste(_degrade(cores, 115, (x1 - x0, y1 - y0)), (x0, y0))
+    icone = _pintar(icone, pedaco, _arredondado((x0, y0, x1, y1), 34))
+    reflexo = _arredondado((x0 + 10, y0 + 10, x1 - 10, y0 + (y1 - y0) // 2), 28)
+    icone = _pintar(icone, _cor("#ffffff"), reflexo.point(lambda v: v * 45 // 255))
+
+icone.resize((512, 512), Image.LANCZOS).save("assets/icon.png")
 tamanhos = [256, 128, 64, 48, 32, 16]
-imgs = [icone.resize((t, t), Image.NEAREST) for t in tamanhos]
-imgs[0].save("assets/icon.ico", format="ICO",
-             sizes=[(t, t) for t in tamanhos], append_images=imgs[1:])
+imgs = [icone.resize((t, t), Image.LANCZOS) for t in tamanhos]
+imgs[0].save("assets/icon.ico", format="ICO", sizes=[(t, t) for t in tamanhos], append_images=imgs[1:])
 
 # ---------- Logo "TESSERA" em pedra 3D ----------
 # Mesma proporção do logo original do jogo (1937x333).
