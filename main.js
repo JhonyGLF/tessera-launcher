@@ -1,3 +1,13 @@
+// Com ELECTRON_RUN_AS_NODE (o terminal do VS Code define), "npm start" roda o Electron como Node puro
+// e require('electron') devolve só o caminho do executável: reabre como app de verdade.
+// (No launcher instalado isso nunca acontece.)
+if (typeof require('electron') === 'string') {
+  const env = { ...process.env };
+  delete env.ELECTRON_RUN_AS_NODE;
+  const r = require('child_process').spawnSync(require('electron'), [__dirname, ...process.argv.slice(2)], { stdio: 'inherit', env });
+  process.exit(r.status == null ? 1 : r.status);
+}
+
 const { app, BrowserWindow, ipcMain, shell, dialog, protocol, net } = require('electron');
 const fs = require('fs');
 const path = require('path');

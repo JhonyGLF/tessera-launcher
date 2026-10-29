@@ -41,26 +41,27 @@ O launcher procura versões novas nos lançamentos deste repositório ao abrir e
 O arquivo baixado só é aceito se o hash (sha512) bater com o publicado. Quando a versão nova está
 pronta, aparece **"Atualização pronta — Reiniciar"** na barra lateral (e em Configurações › Sobre).
 
-## Testar
-Precisa do [Node.js](https://nodejs.org) instalado.
+## Rodar pelo código
+Precisa do [Node.js](https://nodejs.org) instalado. No terminal, na pasta do projeto:
 
-- Windows: dê dois cliques em `iniciar.bat`
-- Ou no terminal: `npm install` e depois `npm start`
+```
+npm install
+npm start
+```
 
 ## Testes de regressão
 `npm run testar` (ou `npm run testar -- mrpack` para um arquivo só). Rodam dentro do Electron com
 pastas temporárias, sem tocar nos seus dados. Ficam em `testes/*.teste.js`.
 
 ## Gerar o .exe
-- Windows: dois cliques em `gerar-exe.bat` (não precisa de administrador)
-- Ou no terminal: `npm run build`
+`npm run build` (não precisa de administrador).
 
 Saída na pasta `dist`: um `.exe` portátil e um instalador.
 
 
 ## Publicar uma versão nova
 1. Suba o número em `package.json` → `"version"` (ex.: `1.0.0` → `1.1.0`).
-2. Rode `npm run testar` (tudo precisa passar) e gere os arquivos com `gerar-exe.bat`.
+2. Rode `npm run testar` (tudo precisa passar) e gere os arquivos com `npm run build`.
 3. Faça o commit e publique (precisa do [GitHub CLI](https://cli.github.com) logado):
    ```
    git push
@@ -97,9 +98,6 @@ downloads continuam lá. Se algum arquivo estiver em uso, o launcher usa a pasta
   (Pixelify Sans e VT323, licença SIL OFL)
 - `make_assets.py`: gera os assets em pixel art (opcional, precisa de Pillow e numpy)
 - `ARQUITETURA.md`: contrato entre os módulos (formatos de dados)
-
-## Se o `npm start` abrir e fechar na hora pelo terminal do VS Code
-O VS Code define a variável `ELECTRON_RUN_AS_NODE`. Rode pelo `iniciar.bat` ou por um terminal fora do VS Code.
 
 ## Licença
 [GPL-3.0](LICENSE). Você pode usar, estudar, modificar e redistribuir o Tessera; versões modificadas
