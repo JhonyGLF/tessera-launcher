@@ -21,13 +21,21 @@ const pasta = (...p) => path.join(RAIZ, ...p);
 
 // ---------- Versões ----------
 let manifestoMemoria = null; // { quando, dados }
+const UM_DIA = 24 * 60 * 60 * 1000;
 
-async function listarVersoes() {
+// maxIdadeMs: aceita a cópia em disco se for mais nova que isso, sem consultar a internet
+// (usado ao clicar em Jogar; a lista que aparece para criar instâncias sempre busca a atual).
+async function listarVersoes({ maxIdadeMs = 0 } = {}) {
   if (manifestoMemoria && Date.now() - manifestoMemoria.quando < 5 * 60 * 1000) return manifestoMemoria.dados;
   const cache = pasta('versions', 'version_manifest_v2.json');
+  if (maxIdadeMs) {
+    try {
+      if (Date.now() - fs.statSync(cache).mtimeMs < maxIdadeMs) return JSON.parse(fs.readFileSync(cache, 'utf8'));
+    } catch { /* sem cópia válida: busca */ }
+  }
   let manifesto;
   try {
-    const resp = await fetch(MANIFESTO);
+    const resp = await fetch(MANIFESTO, { signal: AbortSignal.timeout(8000) });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     manifesto = await resp.json();
     fs.mkdirSync(path.dirname(cache), { recursive: true });
@@ -100,7 +108,9 @@ async function carregarJson(id) {
 
   let entrada = null;
   try {
-    entrada = (await listarVersoes()).versions.find((v) => v.id === id);
+    entrada = (await listarVersoes({ maxIdadeMs: UM_DIA })).versions.find((v) => v.id === id);
+    // versão lançada depois da cópia em disco: busca a lista atual
+    if (!entrada && !existente) entrada = (await listarVersoes()).versions.find((v) => v.id === id);
   } catch (erro) {
     if (!existente) throw erro;
   }
@@ -409,5 +419,6 @@ function iniciar(inst, sessao, opcoes = {}) {
 
 module.exports = {
   RAIZ, listarVersoes, resolverVersao, instalar, iniciar, montarArgumentos,
+  limparCacheVersoes: () => { manifestoMemoria = null; }, // usado nos testes
   caminhoMaven, dividirArgs,
 };
