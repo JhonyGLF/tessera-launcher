@@ -1,0 +1,187 @@
+/* ==========================================================================
+   Base: fontes, tokens (cores, espaços, tipografia), temas, reset, scrollbars
+   ========================================================================== */
+@font-face {
+  font-family: "Pixelify";
+  src: url("../../assets/fonts/PixelifySans.ttf");
+  font-weight: 400 700;
+  font-display: block;
+}
+@font-face {
+  font-family: "VT";
+  src: url("../../assets/fonts/VT323-Regular.ttf");
+  font-display: block;
+}
+
+:root {
+  /* superfícies (do mais fundo para o mais alto) */
+  --fundo-0: #09090d;
+  --fundo-1: #111117;
+  --fundo-2: #17171f;
+  --fundo-3: #20202a;
+  --fundo-4: #2a2a36;
+  --linha: rgba(255, 255, 255, 0.07);
+  --linha-forte: rgba(255, 255, 255, 0.13);
+
+  /* texto */
+  --texto: #f2f2f5;
+  --texto-2: #b9b9c6;
+  --texto-3: #80808f;
+  --texto-4: #5b5b69;
+
+  /* cores fixas (no estilo do jogo) */
+  --amarelo: #ffff55;
+  --amarelo-sombra: #3f3f15;
+  --vermelho: #ff5c5c;
+  --vermelho-escuro: #8c1f1f;
+  --laranja: #ffaa33;
+  --ok: #6fdc4a;
+
+  /* botão verde (ação principal), estilo Bedrock */
+  --verde: #3c8527;
+  --verde-claro: #5bb33d;
+  --verde-hover: #47a02e;
+  --verde-escuro: #1d4d13;
+  /* botão de pedra */
+  --pedra: #4a4a55;
+  --pedra-hover: #5a5a67;
+  --pedra-claro: #6c6c7a;
+  --pedra-escuro: #26262e;
+  /* botão de perigo */
+  --perigo: #b3312b;
+  --perigo-hover: #c93e37;
+  --perigo-claro: #e0645b;
+  --perigo-escuro: #5e1411;
+
+  /* destaque (muda com o tema) — padrão: sculk */
+  --destaque: #2fd3d0;
+  --destaque-forte: #7cf2ee;
+  --destaque-escuro: #0d6b70;
+  --destaque-rgb: 47 211 208;
+  --texto-sobre-destaque: #031a1b;
+
+  /* tipografia */
+  --fonte-pixel: "Pixelify", "VT", monospace;
+  --fonte-vt: "VT", "Pixelify", monospace;
+  --fonte-texto: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+
+  /* espaços */
+  --e1: 4px;
+  --e2: 8px;
+  --e3: 12px;
+  --e4: 16px;
+  --e5: 24px;
+  --e6: 32px;
+  --e7: 48px;
+
+  /* contorno pixel: 2px pretos com os cantos "comidos" (degrau) */
+  --px-contorno: 0 -2px 0 0 #000, 0 2px 0 0 #000, -2px 0 0 0 #000, 2px 0 0 0 #000;
+  --px-contorno-claro: 0 -2px 0 0 #fff, 0 2px 0 0 #fff, -2px 0 0 0 #fff, 2px 0 0 0 #fff;
+  --px-contorno-destaque: 0 -2px 0 0 var(--destaque), 0 2px 0 0 var(--destaque), -2px 0 0 0 var(--destaque), 2px 0 0 0 var(--destaque);
+  /* sombra dura em degrau abaixo dos cartões */
+  --px-sombra: 0 6px 0 -2px rgba(0, 0, 0, 0.38);
+
+  --transicao: 120ms ease-out;
+  color-scheme: dark;
+}
+
+/* ---------- Temas: trocam só a cor de destaque ---------- */
+[data-tema="grama"] {
+  --destaque: #74d43f;
+  --destaque-forte: #b2f07f;
+  --destaque-escuro: #2d6a17;
+  --destaque-rgb: 116 212 63;
+  --texto-sobre-destaque: #0c2105;
+}
+[data-tema="ametista"] {
+  --destaque: #b583ff;
+  --destaque-forte: #dcc2ff;
+  --destaque-escuro: #5b30a3;
+  --destaque-rgb: 181 131 255;
+  --texto-sobre-destaque: #1a0b33;
+}
+[data-tema="nether"] {
+  --destaque: #ff7036;
+  --destaque-forte: #ffb07a;
+  --destaque-escuro: #8c2a0a;
+  --destaque-rgb: 255 112 54;
+  --texto-sobre-destaque: #2a0a00;
+}
+[data-tema="gelo"] {
+  --destaque: #8fd9ff;
+  --destaque-forte: #d0f1ff;
+  --destaque-escuro: #2c6a96;
+  --destaque-rgb: 143 217 255;
+  --texto-sobre-destaque: #06202e;
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  color: var(--texto);
+  font-family: var(--fonte-texto);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+a { color: var(--destaque); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+img { display: block; max-width: 100%; }
+svg { display: block; flex: none; }
+[hidden] { display: none !important; }
+input, textarea { user-select: text; -webkit-user-select: text; }
+::selection { background: rgb(var(--destaque-rgb) / 0.4); color: #fff; }
+
+/* foco visível sempre (teclado) */
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--destaque); outline-offset: 3px; }
+
+/* ---------- Tipografia ---------- */
+.pixel { font-family: var(--fonte-pixel); font-variant-ligatures: none; }
+.vt { font-family: var(--fonte-vt); }
+h1, h2, h3, h4 {
+  font-family: var(--fonte-pixel);
+  font-variant-ligatures: none; /* a Pixelify junta "fi" num glifo estranho */
+  font-weight: 600;
+  line-height: 1.15;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.75);
+}
+h1 { font-size: 28px; }
+h2 { font-size: 21px; }
+h3 { font-size: 17px; }
+h4 { font-size: 15px; }
+.suave { color: var(--texto-2); }
+.mais-suave { color: var(--texto-3); }
+.destaque { color: var(--destaque); }
+.amarelo { color: var(--amarelo); }
+.numero { font-family: var(--fonte-vt); font-size: 1.25em; line-height: 1; }
+.truncar { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+/* ---------- Scrollbars pixel ---------- */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--fundo-4);
+  border: 4px solid transparent;
+  background-clip: padding-box;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.06);
+}
+::-webkit-scrollbar-thumb:hover { background-color: #3a3a4a; }
+::-webkit-scrollbar-thumb:active { background-color: rgb(var(--destaque-rgb) / 0.6); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}

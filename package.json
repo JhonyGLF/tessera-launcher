@@ -1,0 +1,63 @@
+{
+  "name": "tessera-launcher",
+  "productName": "Tessera Launcher",
+  "version": "1.0.0",
+  "description": "Tessera Launcher - launcher de Minecraft: Java Edition",
+  "main": "main.js",
+  "author": "Tessera",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "testar": "electron testes/executar.js",
+    "build": "electron-builder --win"
+  },
+  "devDependencies": {
+    "electron": "^44.9.3",
+    "electron-builder": "^26.17.0",
+    "htm": "^3.1.1"
+  },
+  "build": {
+    "appId": "com.tessera.launcher",
+    "productName": "Tessera Launcher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "launcher/**/*",
+      "renderer/**/*",
+      "assets/**/*"
+    ],
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "artifactName": "Tessera-Launcher-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "JhonyGLF",
+      "repo": "tessera-launcher",
+      "releaseType": "release"
+    },
+    "portable": {
+      "artifactName": "Tessera-Launcher-${version}-portatil.${ext}"
+    }
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "electron-updater": "^6.8.10",
+    "marked": "^12.0.2",
+    "msmc": "^5.0.5",
+    "sanitize-html": "^2.13.0"
+  }
+}
