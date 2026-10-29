@@ -220,6 +220,30 @@ Object.assign(jg, {
   aoLog: ouvir('log'),
 });
 
+// ---------- Otimizar instância ----------
+const PLANO_MOCK = [
+  ['AANobbMI', 'Sodium', 'Renderização muito mais rápida (mais FPS)', 'instalado'],
+  ['gvQqBUqZ', 'Lithium', 'Lógica do mundo mais leve, menos travadas', 'instalar'],
+  ['uXXizFIs', 'FerriteCore', 'Usa bem menos memória RAM', 'instalar'],
+  ['NNAgCjsB', 'Entity Culling', 'Não desenha criaturas escondidas atrás de paredes', 'instalar'],
+  ['5ZwdcRci', 'ImmediatelyFast', 'Interface, textos e HUD mais rápidos', 'instalar'],
+  ['nmDcB62a', 'ModernFix', 'Abre o jogo mais rápido e corrige vazamentos de memória', 'indisponivel', 'Ainda sem versão para 26.3 com Fabric'],
+  ['51shyZVL', 'More Culling', 'Não desenha faces de blocos que ninguém vê', 'instalar'],
+  ['LQ3K71Q1', 'Dynamic FPS', 'Baixa o FPS com o jogo minimizado (economiza energia)', 'instalar'],
+];
+Object.assign(jg, {
+  async planoOtimizacao(id) {
+    await latencia(500);
+    const inst = instancias.find((i) => i.id === id);
+    if (!inst || inst.loader.tipo === 'vanilla') return { ok: true, loader: 'vanilla', mc: inst && inst.mc, itens: [] };
+    return { ok: true, loader: inst.loader.tipo, mc: inst.mc, itens: PLANO_MOCK.map(([projetoId, nome, papel, estado, motivo]) => ({
+      projetoId, nome, papel, estado, motivo: motivo || null, descricao: '', versaoId: estado === 'instalar' ? 'x' : null,
+      iconeUrl: `https://cdn.modrinth.com/data/${projetoId}/icon.png`,
+    })) };
+  },
+  async otimizarInstancia(id, ids) { await latencia(800); return { ok: true, instalados: ids, falhas: [], mensagem: `${ids.length} mods instalados.` }; },
+});
+
 // ---------- Atualização do launcher ----------
 // cenários: atualizacao-pronta, atualizacao-baixando, atualizacao-portatil
 let atualizacaoMock = {

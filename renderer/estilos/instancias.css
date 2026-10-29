@@ -582,3 +582,30 @@
 .vezes { padding-bottom: 10px; font-family: var(--fonte-vt); font-size: 22px; color: var(--texto-3); }
 .zona-perigo { box-shadow: var(--px-contorno), inset 0 0 0 2px rgba(255, 92, 92, 0.25), var(--px-sombra) !important; }
 .zona-perigo .config-textos strong { color: var(--vermelho); }
+
+/* ---------- Modal "Otimizar instância" ---------- */
+.otimizar-intro { font-size: 13.5px; color: var(--texto-2); margin-bottom: 14px; }
+.otimizar-intro b { color: var(--texto); }
+.lista-otimizar { display: flex; flex-direction: column; margin: 2px; background: var(--fundo-1); box-shadow: inset 0 0 0 2px #23232e; max-height: 380px; overflow-y: auto; }
+.linha-otimizar { display: flex; align-items: center; gap: 12px; padding: 9px 12px; cursor: pointer; transition: background var(--transicao); }
+.linha-otimizar + .linha-otimizar { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.035); }
+.linha-otimizar:hover { background: rgba(255, 255, 255, 0.03); }
+.linha-otimizar.bloqueada { cursor: default; }
+.linha-otimizar.bloqueada .otimizar-icone, .linha-otimizar.bloqueada .otimizar-textos { opacity: 0.55; }
+.linha-otimizar input { position: absolute; opacity: 0; pointer-events: none; }
+.linha-otimizar .caixa-quadro {
+  width: 18px; height: 18px; flex: none; display: grid; place-items: center;
+  color: var(--texto-sobre-destaque); background: var(--fundo-0); box-shadow: inset 0 0 0 2px #3a3a48;
+}
+.linha-otimizar.marcada .caixa-quadro { background: var(--destaque); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.25); }
+.linha-otimizar.bloqueada .caixa-quadro { opacity: 0.35; }
+.linha-otimizar input:focus-visible + .caixa-quadro { outline: 2px solid var(--destaque); outline-offset: 2px; }
+.otimizar-icone { width: 36px; height: 36px; flex: none; display: grid; place-items: center; overflow: hidden; color: var(--texto-3); background: var(--fundo-3); }
+.otimizar-icone img { width: 100%; height: 100%; object-fit: cover; }
+.otimizar-textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.otimizar-textos strong { font-size: 14px; }
+.otimizar-textos .papel { font-size: 12.5px; color: var(--texto-2); }
+.otimizar-textos .motivo { font-size: 12px; color: var(--amarelo); }
+.otimizar-pronto { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; color: var(--ok); }
+.otimizar-vanilla p + p { margin-top: 6px; font-size: 13px; }
+

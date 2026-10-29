@@ -205,6 +205,8 @@ handle('instancias:emExecucao', () => instancias.emExecucao());
 handle('instancias:lerLog', (id) => instancias.lerLog(id));
 handle('instancias:verificarAtualizacoes', (id) => modrinth.verificarAtualizacoes(id));
 handle('instancias:atualizarConteudo', (id, itens) => modrinth.atualizarConteudo(id, itens));
+handle('instancias:planoOtimizacao', (id) => modrinth.planoOtimizacao(id));
+handle('instancias:otimizar', (id, projetoIds) => modrinth.otimizarInstancia(id, projetoIds));
 handle('instancias:importarMrpack', async () => {
   const [arquivo] = await escolherArquivos({
     title: 'Importar modpack (.mrpack)',

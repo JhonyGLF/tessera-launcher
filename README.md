@@ -18,6 +18,10 @@ Feito com Electron; a interface usa Preact + htm (sem etapa de build).
   incluindo as dependências obrigatórias.
 - **Modpacks**: instalar do Modrinth ou importar um arquivo `.mrpack` vira uma instância nova pronta.
 - **Conteúdo da instância**: ativar/desativar, remover, adicionar arquivos, **verificar e aplicar atualizações**.
+- **Otimizar instância**: um clique instala os mods de desempenho certos para a versão e o loader
+  (Sodium ou Embeddium, Lithium, FerriteCore, Entity Culling, ImmediatelyFast, ModernFix, More Culling,
+  Dynamic FPS), pulando o que não existe para a versão ou conflita com o OptiFine.
+- **Joga sem internet**: com o jogo e o Java já baixados, abre normalmente offline.
 - **Mundos** e **log ao vivo** do jogo (com filtro, copiar e pasta de logs).
 - **Contas**: várias contas Microsoft e contas offline, com troca rápida.
 - **Visual**: 5 temas de cor (Sculk, Grama, Ametista, Nether, Gelo), notícias oficiais do Minecraft na tela inicial.

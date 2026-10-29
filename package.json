@@ -1,7 +1,7 @@
 {
   "name": "tessera-launcher",
   "productName": "Tessera Launcher",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tessera Launcher - launcher de Minecraft: Java Edition",
   "main": "main.js",
   "author": "Tessera",

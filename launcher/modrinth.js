@@ -513,6 +513,89 @@ function arquivosDaPasta(pasta) {
 }
 
 // ---------- Instalar mod / resource pack / shader ----------
+// Instalador com dependências obrigatórias para uma instância (usado por instalarProjeto e
+// otimizarInstancia). instalarUm(projeto, versão|null, principal) baixa o projeto e as dependências.
+function criarInstalador(instanciaId, t) {
+  const { pasta, dados: inst } = lerInstancia(instanciaId);
+  const mc = inst.mc;
+  const loader = (inst.loader && inst.loader.tipo) || 'vanilla';
+  const instalados = [];
+  const visitados = new Set();
+
+  // projetos já presentes em cada pasta (por hash → projeto)
+  const presentes = {};
+  const projetosNaPasta = async (sub) => {
+    if (!presentes[sub]) {
+      const arquivos = arquivosDaPasta(path.join(pasta, sub));
+      const mapa = await hashes(arquivos.map((a) => a.caminho));
+      presentes[sub] = arquivos.map((a) => ({ ...a, info: mapa.get(a.caminho) || null }));
+    }
+    return presentes[sub];
+  };
+
+  const instalarUm = async (idProjeto, idVersao, principal) => {
+    const proj = await projetoBruto(idProjeto);
+    if (visitados.has(proj.id)) return;
+    visitados.add(proj.id);
+    const sub = PASTA_TIPO[proj.project_type];
+    if (!sub) {
+      if (principal) throw new Error('Esse tipo de conteúdo não é suportado.');
+      return; // dependência de tipo estranho (ex.: datapack): ignora
+    }
+    const existentes = await projetosNaPasta(sub);
+    const doProjeto = existentes.filter((e) => e.info && e.info.projetoId === proj.id);
+    if (!principal && doProjeto.length) return; // dependência já instalada
+
+    t.atualizar({ etapa: `Procurando versão de ${proj.title}` });
+    let versao;
+    if (idVersao) {
+      versao = await api(`/version/${encodeURIComponent(idVersao)}`, { cacheMs: 5 * 60 * 1000 });
+      if (versao.project_id !== proj.id) throw new Error('Versão não pertence a esse projeto.');
+    } else {
+      const lista = await listarVersoesBrutas(proj.id, { loaders: loadersAceitos(proj.project_type, loader), versaoMc: mc });
+      versao = melhorVersao(lista);
+      if (!versao) throw new Error(`${proj.title} não tem versão para ${mc}${loadersAceitos(proj.project_type, loader) ? ` com ${loader}` : ''}.`);
+    }
+    const arq = arquivoPrincipal(versao);
+    if (!arq) throw new Error(`${proj.title} não tem arquivo para baixar.`);
+    const nome = nomeSeguro(arq.filename);
+    if (!urlPermitida(arq.url, DOMINIOS_MRPACK)) throw new Error(`Endereço de download não permitido para ${proj.title}.`);
+
+    const destino = path.join(pasta, sub, nome);
+    const jaIgual = doProjeto.find((e) => e.info.versaoId === versao.id && e.ativo);
+    if (!jaIgual) {
+      t.atualizar({ etapa: `Baixando ${proj.title}` });
+      apagar(`${destino}.disabled`); // havia o mesmo arquivo desativado: substitui
+      await baixar(arq.url, destino, { size: arq.size, sha1: arq.hashes && arq.hashes.sha1 });
+      // remove a versão antiga do mesmo projeto
+      for (const antigo of doProjeto) {
+        if (antigo.caminho !== destino) apagar(antigo.caminho);
+      }
+      existentes.push({ arquivo: nome, caminho: destino, ativo: true, info: { projetoId: proj.id, versaoId: versao.id } });
+      instalados.push(proj.title);
+    }
+
+    // dependências obrigatórias
+    for (const dep of versao.dependencies || []) {
+      if (dep.dependency_type !== 'required') continue;
+      let depProjeto = dep.project_id;
+      if (!depProjeto && dep.version_id) {
+        depProjeto = (await api(`/version/${dep.version_id}`, { cacheMs: 5 * 60 * 1000 })).project_id;
+      }
+      if (!depProjeto) continue;
+      // a versão fixada pela dependência só vale se for compatível; senão escolhe a melhor
+      let depVersao = null;
+      if (dep.version_id) {
+        const v = await api(`/version/${dep.version_id}`, { cacheMs: 5 * 60 * 1000 });
+        const aceitos = loadersAceitos('mod', loader);
+        if (v.game_versions.includes(mc) && (!aceitos || v.loaders.some((l) => aceitos.includes(l)))) depVersao = v.id;
+      }
+      await instalarUm(depProjeto, depVersao, false);
+    }
+  };
+  return { instalarUm, instalados };
+}
+
 async function instalarProjeto({ projetoId, versaoId, instanciaId } = {}) {
   let titulo = 'conteúdo';
   try {
@@ -531,89 +614,105 @@ async function instalarProjeto({ projetoId, versaoId, instanciaId } = {}) {
   }
 
   return tarefas.executar(`Instalando ${titulo}`, async (t) => {
-    const { pasta, dados: inst } = lerInstancia(instanciaId);
-    const mc = inst.mc;
-    const loader = (inst.loader && inst.loader.tipo) || 'vanilla';
-    const instalados = [];
-    const visitados = new Set();
-
-    // projetos já presentes em cada pasta (por hash → projeto)
-    const presentes = {};
-    const projetosNaPasta = async (sub) => {
-      if (!presentes[sub]) {
-        const arquivos = arquivosDaPasta(path.join(pasta, sub));
-        const mapa = await hashes(arquivos.map((a) => a.caminho));
-        presentes[sub] = arquivos.map((a) => ({ ...a, info: mapa.get(a.caminho) || null }));
-      }
-      return presentes[sub];
-    };
-
-    const instalarUm = async (idProjeto, idVersao, principal) => {
-      const proj = await projetoBruto(idProjeto);
-      if (visitados.has(proj.id)) return;
-      visitados.add(proj.id);
-      const sub = PASTA_TIPO[proj.project_type];
-      if (!sub) {
-        if (principal) throw new Error('Esse tipo de conteúdo não é suportado.');
-        return; // dependência de tipo estranho (ex.: datapack): ignora
-      }
-      const existentes = await projetosNaPasta(sub);
-      const doProjeto = existentes.filter((e) => e.info && e.info.projetoId === proj.id);
-      if (!principal && doProjeto.length) return; // dependência já instalada
-
-      t.atualizar({ etapa: `Procurando versão de ${proj.title}` });
-      let versao;
-      if (idVersao) {
-        versao = await api(`/version/${encodeURIComponent(idVersao)}`, { cacheMs: 5 * 60 * 1000 });
-        if (versao.project_id !== proj.id) throw new Error('Versão não pertence a esse projeto.');
-      } else {
-        const lista = await listarVersoesBrutas(proj.id, { loaders: loadersAceitos(proj.project_type, loader), versaoMc: mc });
-        versao = melhorVersao(lista);
-        if (!versao) throw new Error(`${proj.title} não tem versão para ${mc}${loadersAceitos(proj.project_type, loader) ? ` com ${loader}` : ''}.`);
-      }
-      const arq = arquivoPrincipal(versao);
-      if (!arq) throw new Error(`${proj.title} não tem arquivo para baixar.`);
-      const nome = nomeSeguro(arq.filename);
-      if (!urlPermitida(arq.url, DOMINIOS_MRPACK)) throw new Error(`Endereço de download não permitido para ${proj.title}.`);
-
-      const destino = path.join(pasta, sub, nome);
-      const jaIgual = doProjeto.find((e) => e.info.versaoId === versao.id && e.ativo);
-      if (!jaIgual) {
-        t.atualizar({ etapa: `Baixando ${proj.title}` });
-        apagar(`${destino}.disabled`); // havia o mesmo arquivo desativado: substitui
-        await baixar(arq.url, destino, { size: arq.size, sha1: arq.hashes && arq.hashes.sha1 });
-        // remove a versão antiga do mesmo projeto
-        for (const antigo of doProjeto) {
-          if (antigo.caminho !== destino) apagar(antigo.caminho);
-        }
-        existentes.push({ arquivo: nome, caminho: destino, ativo: true, info: { projetoId: proj.id, versaoId: versao.id } });
-        instalados.push(proj.title);
-      }
-
-      // dependências obrigatórias
-      for (const dep of versao.dependencies || []) {
-        if (dep.dependency_type !== 'required') continue;
-        let depProjeto = dep.project_id;
-        if (!depProjeto && dep.version_id) {
-          depProjeto = (await api(`/version/${dep.version_id}`, { cacheMs: 5 * 60 * 1000 })).project_id;
-        }
-        if (!depProjeto) continue;
-        // a versão fixada pela dependência só vale se for compatível; senão escolhe a melhor
-        let depVersao = null;
-        if (dep.version_id) {
-          const v = await api(`/version/${dep.version_id}`, { cacheMs: 5 * 60 * 1000 });
-          const aceitos = loadersAceitos('mod', loader);
-          if (v.game_versions.includes(mc) && (!aceitos || v.loaders.some((l) => aceitos.includes(l)))) depVersao = v.id;
-        }
-        await instalarUm(depProjeto, depVersao, false);
-      }
-    };
-
+    const { instalarUm, instalados } = criarInstalador(instanciaId, t);
     await instalarUm(projetoId, versaoId || null, true);
     await notificar();
     return {
       instalados,
       mensagem: instalados.length ? `Instalado: ${instalados.join(', ')}` : 'Já estava instalado.',
+    };
+  });
+}
+
+// ---------- Otimizar instância ----------
+// Mods de desempenho conhecidos e testados juntos. Nenhum muda o jogo, só deixa mais leve.
+// render: substitui o renderizador (conflita com OptiFine e com outro renderizador).
+// soLoaders: só entra nesses loaders (o Embeddium é a alternativa do Sodium no Forge).
+const OTIMIZACOES = [
+  { id: 'AANobbMI', papel: 'Renderização muito mais rápida (mais FPS)', render: true },
+  { id: 'sk9rgfiA', papel: 'Renderização mais rápida (o Sodium do Forge)', render: true, soLoaders: ['forge'] },
+  { id: 'gvQqBUqZ', papel: 'Lógica do mundo mais leve, menos travadas' },
+  { id: 'uXXizFIs', papel: 'Usa bem menos memória RAM' },
+  { id: 'NNAgCjsB', papel: 'Não desenha criaturas escondidas atrás de paredes' },
+  { id: '5ZwdcRci', papel: 'Interface, textos e HUD mais rápidos' },
+  { id: 'nmDcB62a', papel: 'Abre o jogo mais rápido e corrige vazamentos de memória' },
+  { id: '51shyZVL', papel: 'Não desenha faces de blocos que ninguém vê', render: true },
+  { id: 'LQ3K71Q1', papel: 'Baixa o FPS com o jogo minimizado (economiza energia)' },
+];
+const SODIUM = 'AANobbMI';
+const EMBEDDIUM = 'sk9rgfiA';
+const NOME_LOADER = { fabric: 'Fabric', quilt: 'Quilt', forge: 'Forge', neoforge: 'NeoForge' };
+
+// O que dá para instalar nesta instância e por quê (nada é instalado aqui)
+async function planoOtimizacao(instanciaId) {
+  try {
+    const { pasta, dados: inst } = lerInstancia(instanciaId);
+    const loader = (inst.loader && inst.loader.tipo) || 'vanilla';
+    if (loader === 'vanilla') return { ok: true, loader, mc: inst.mc, itens: [] };
+    const candidatos = OTIMIZACOES.filter((o) => !o.soLoaders || o.soLoaders.includes(loader));
+
+    // o que já está na pasta mods (pelo Modrinth e pelo nome do arquivo)
+    const arquivos = arquivosDaPasta(path.join(pasta, 'mods'));
+    const mapa = await hashes(arquivos.map((a) => a.caminho));
+    const instalados = new Set(arquivos.map((a) => mapa.get(a.caminho)).filter(Boolean).map((i) => i.projetoId));
+    const nomes = arquivos.map((a) => a.arquivo.toLowerCase()).join(' ');
+    const temOptifine = /optifine|optifabric/.test(nomes);
+    const outroRenderizador = instalados.has(EMBEDDIUM) || /rubidium|embeddium/.test(nomes);
+
+    const projetos = {};
+    for (const p of await api(`/projects?ids=${q(candidatos.map((c) => c.id))}`, { cacheMs: 30 * 60 * 1000 })) projetos[p.id] = p;
+    const itens = [];
+    await emLote(candidatos, async (c) => {
+      const p = projetos[c.id];
+      if (!p) return;
+      const item = { projetoId: c.id, nome: p.title, descricao: p.description, iconeUrl: p.icon_url || null, papel: c.papel, estado: 'instalar', motivo: null, versaoId: null };
+      if (instalados.has(c.id)) Object.assign(item, { estado: 'instalado' });
+      else if (c.render && temOptifine) Object.assign(item, { estado: 'conflito', motivo: 'Incompatível com o OptiFine instalado' });
+      else if (c.id === SODIUM && outroRenderizador) Object.assign(item, { estado: 'conflito', motivo: 'A instância já tem o Embeddium/Rubidium' });
+      else {
+        const lista = await listarVersoesBrutas(c.id, { loaders: loadersAceitos('mod', loader), versaoMc: inst.mc });
+        const v = melhorVersao(lista);
+        if (v) item.versaoId = v.id;
+        else Object.assign(item, { estado: 'indisponivel', motivo: `Ainda sem versão para ${inst.mc} com ${NOME_LOADER[loader] || loader}` });
+      }
+      itens.push(item);
+    }, () => {}, 4);
+    const ordem = new Map(candidatos.map((c, i) => [c.id, i]));
+    itens.sort((a, b) => ordem.get(a.projetoId) - ordem.get(b.projetoId));
+    return { ok: true, loader, mc: inst.mc, itens };
+  } catch (erro) {
+    return falha(erro);
+  }
+}
+
+// Instala os mods escolhidos do plano, numa tarefa só. Só aceita mods da lista acima.
+async function otimizarInstancia(instanciaId, projetoIds = []) {
+  let nome;
+  try {
+    nome = lerInstancia(instanciaId).dados.nome || instanciaId;
+    if (!Array.isArray(projetoIds) || !projetoIds.length) throw new Error('Nenhum mod escolhido.');
+    const conhecidos = new Set(OTIMIZACOES.map((o) => o.id));
+    if (projetoIds.some((id) => !conhecidos.has(id))) throw new Error('Mod fora da lista de otimização.');
+  } catch (erro) {
+    return falha(erro);
+  }
+  return tarefas.executar(`Otimizando ${nome}`, async (t) => {
+    const { instalarUm, instalados } = criarInstalador(instanciaId, t);
+    const falhas = [];
+    for (const [i, id] of [...new Set(projetoIds)].entries()) {
+      t.atualizar({ etapa: 'Instalando mods de desempenho', feitos: i, total: projetoIds.length });
+      try {
+        await instalarUm(id, null, true);
+      } catch (erro) {
+        falhas.push(erro.message); // um mod sem versão não impede os outros
+      }
+    }
+    await notificar();
+    if (!instalados.length && falhas.length) throw new Error(falhas[0]);
+    return {
+      instalados,
+      falhas,
+      mensagem: instalados.length ? `${instalados.length} ${instalados.length === 1 ? 'mod instalado' : 'mods instalados'}.` : 'Nada novo para instalar.',
     };
   });
 }
@@ -955,7 +1054,7 @@ async function atualizarConteudo(instanciaId, itens = []) {
 
 module.exports = {
   buscar, projeto, versoesProjeto, categorias,
-  instalarProjeto, instalarModpack, importarMrpack,
+  instalarProjeto, instalarModpack, importarMrpack, planoOtimizacao, otimizarInstancia,
   verificarAtualizacoes, atualizarConteudo,
   hashes, sha1Arquivo, limparHtml,
   // usado nos testes

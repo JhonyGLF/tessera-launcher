@@ -23,6 +23,7 @@ const ICONES = {
   filtro: ['M1 2h14v1h-14zM1 3h14v1h-14zM2 4h12v1h-12zM3 5h10v1h-10zM4 6h8v1h-8zM5 7h6v1h-6zM6 8h4v1h-4zM6 9h4v1h-4zM6 10h4v1h-4zM6 11h4v1h-4zM6 12h4v1h-4zM7 13h3v1h-3zM8 14h1v1h-1z'],
   fechar: ['M2 2h3v1h-3zM11 2h3v1h-3zM2 3h4v1h-4zM10 3h4v1h-4zM3 4h4v1h-4zM9 4h4v1h-4zM4 5h8v1h-8zM5 6h6v1h-6zM6 7h4v1h-4zM6 8h4v1h-4zM5 9h6v1h-6zM4 10h8v1h-8zM3 11h4v1h-4zM9 11h4v1h-4zM2 12h4v1h-4zM10 12h4v1h-4zM2 13h3v1h-3zM11 13h3v1h-3z'],
   minimizar: ['M2 10h12v1h-12zM2 11h12v1h-12z'],
+  raio: ['M8 1h5v1h-5zM7 2h5v1h-5zM7 3h4v1h-4zM6 4h4v1h-4zM6 5h3v1h-3zM5 6h8v1h-8zM5 7h7v1h-7zM8 8h3v1h-3zM7 9h3v1h-3zM7 10h2v1h-2zM6 11h2v1h-2zM6 12h1v1h-1zM5 13h1v1h-1z'],
   'seta-baixo': ['M7 2h2v8h-2zM3 7h2v1h-2zM11 7h2v1h-2zM4 8h2v1h-2zM10 8h2v1h-2zM5 9h2v1h-2zM9 9h2v1h-2zM6 10h4v1h-4zM7 11h2v1h-2zM3 13h10v1h-10z'],
   'seta-direita': ['M5 3h2v1h-2zM6 4h2v1h-2zM7 5h2v1h-2zM8 6h2v1h-2zM9 7h2v2h-2zM8 9h2v1h-2zM7 10h2v1h-2zM6 11h2v1h-2zM5 12h2v1h-2z'],
   voltar: ['M6 2h2v1h-2zM5 3h3v1h-3zM4 4h3v1h-3zM3 5h3v1h-3zM2 6h12v1h-12zM2 7h12v1h-12zM3 8h3v1h-3zM4 9h3v1h-3zM5 10h3v1h-3zM6 11h2v1h-2z'],

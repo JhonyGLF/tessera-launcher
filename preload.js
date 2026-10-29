@@ -59,6 +59,8 @@ contextBridge.exposeInMainWorld('jg', {
   lerLog: chamar('instancias:lerLog'),
   verificarAtualizacoes: chamar('instancias:verificarAtualizacoes'),
   atualizarConteudo: chamar('instancias:atualizarConteudo'),
+  planoOtimizacao: chamar('instancias:planoOtimizacao'),
+  otimizarInstancia: chamar('instancias:otimizar'),
   importarMrpack: chamar('instancias:importarMrpack'),
 
   // Modrinth

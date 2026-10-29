@@ -16,6 +16,7 @@ import {
   BotaoJogar, ProgressoPreparo, abrirPasta, excluir, itensMenu, rotaInstancia, useAoConcluirTarefa,
 } from '../componentes/instancias/comum.js';
 import { ModalIcone } from '../componentes/instancias/icone.js';
+import { ModalOtimizar } from '../componentes/instancias/otimizar.js';
 import { EscolhaVersao, useEscolhaVersao } from '../componentes/instancias/versao.js';
 
 const ABAS = [
@@ -235,6 +236,7 @@ function AbaConteudo({ inst, tipo, fase }) {
   const [verificando, setVerificando] = useState(false);
   const [atualizacoes, setAtualizacoes] = useState(null);
   const [importando, setImportando] = useState(false);
+  const [otimizar, setOtimizar] = useState(false);
   const bloqueado = fase === 'rodando' || ocupadoFase(fase);
   const vanillaSemMods = tipo === 'mods' && (!inst.loader || inst.loader.tipo === 'vanilla');
 
@@ -292,8 +294,9 @@ function AbaConteudo({ inst, tipo, fase }) {
         placeholder=${`Buscar ${info.plural}...`} aria-label=${`Buscar ${info.plural}`} />
       <span class="conteudo-contagem vt">${itens.length} ${itens.length === 1 ? info.singular : info.plural}${itens.length ? ` · ${ativos} ${ativos === 1 ? 'ativo' : 'ativos'}` : ''}</span>
       <div class="conteudo-acoes">
+        ${tipo === 'mods' && html`<${Botao} variante="destaque" icone="raio" aoClicar=${() => setOtimizar(true)} dica="Instala mods que deixam o jogo mais leve, sem mudar nada no jogo">Otimizar<//>`}
         ${itens.length > 0 && html`<${Botao} icone="atualizar" carregando=${verificando} aoClicar=${verificar} dica="Procurar versões novas no Modrinth">Atualizações<//>`}
-        <${Botao} icone="importar" carregando=${importando} aoClicar=${importar} dica=${`Adicionar arquivos ${info.extensao} do computador`}>Arquivo<//>
+        <${Botao} icone="importar" carregando=${importando} aoClicar=${importar} dica=${`Adicionar arquivos ${info.extensao} do computador`} />
         <${Botao} variante="principal" icone="explorar" aoClicar=${explorar}>Adicionar do Modrinth<//>
       </div>
     </div>
@@ -315,6 +318,7 @@ function AbaConteudo({ inst, tipo, fase }) {
         : !itens.length
           ? html`<${Vazio} titulo=${`Nenhum ${info.singular} ainda`}
               texto=${`Procure ${info.plural} no Modrinth ou adicione arquivos ${info.extensao} do computador.`}>
+              ${tipo === 'mods' && html`<${Botao} variante="destaque" icone="raio" aoClicar=${() => setOtimizar(true)}>Otimizar com um clique<//>`}
               <${Botao} variante="principal" icone="explorar" aoClicar=${explorar}>Explorar ${info.plural}<//>
               <${Botao} icone="pasta" aoClicar=${() => abrirPasta(inst.id, tipo)}>Abrir pasta<//>
             <//>`
@@ -323,6 +327,7 @@ function AbaConteudo({ inst, tipo, fase }) {
             : html`<div class="lista-conteudo" role="list">
                 ${visiveis.map((i) => html`<${LinhaConteudo} key=${i.arquivo} inst=${inst} tipo=${tipo} item=${i} bloqueado=${bloqueado} aoMudou=${aoMudou} />`)}
               </div>`}
+    ${otimizar && html`<${ModalOtimizar} inst=${inst} fase=${fase} aberto=${otimizar} aoFechar=${() => setOtimizar(false)} />`}
   </div>`;
 }
 

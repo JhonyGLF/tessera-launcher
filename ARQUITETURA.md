@@ -165,6 +165,11 @@ para a parte de preparo (loader + downloads) e emite 'jogo'. `lerLog(id)` → ú
 - `hashes(caminhos)` → `Map sha1 → { projetoId, versaoId, nome, versao, autor, descricao, iconeUrl }`
   (cache em RAIZ/cache) — usado por instancias.listarConteudo.
 
+- `planoOtimizacao(instanciaId)` → `{ ok, loader, mc, itens: [{ projetoId, nome, papel, estado: 'instalar'|'instalado'|'indisponivel'|'conflito', motivo, versaoId }] }`
+  (lista curada `OTIMIZACOES` em modrinth.js; nada é instalado).
+- `otimizarInstancia(instanciaId, projetoIds)` → instala os escolhidos (só ids da lista curada), com dependências,
+  numa tarefa "Otimizando <nome>". `{ ok, instalados, falhas, mensagem }`.
+
 ### noticias.js
 `listar()` → `{ ok, noticias: [{ id, titulo, versao, tipo, data, imagemUrl, resumo, corpoHtml }] }`
 do feed `https://launchercontent.mojang.com/v2/javaPatchNotes.json` (imagens são relativas a
