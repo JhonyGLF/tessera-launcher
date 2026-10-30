@@ -6,6 +6,11 @@
 // Só funciona no app empacotado. TESSERA_ATUALIZACAO_TESTE=<url> aponta para um servidor de teste.
 const { app, shell } = require('electron');
 const { EventEmitter } = require('events');
+const config = require('./config');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+const { spawn } = require('child_process');
 
 const DONO = 'JhonyGLF';
 const REPO = 'tessera-launcher';
@@ -63,7 +68,7 @@ let atualizador = null;
 function obterAtualizador() {
   if (atualizador) return atualizador;
   const { autoUpdater } = require('electron-updater');
-  autoUpdater.autoDownload = true;
+  autoUpdater.autoDownload = config.interno('atualizacaoAutomatica') !== false;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.allowPrerelease = false;
   autoUpdater.logger = null;
@@ -78,7 +83,10 @@ function obterAtualizador() {
   let versao = null;
   autoUpdater.on('checking-for-update', () => definir({ estado: 'verificando' }));
   autoUpdater.on('update-not-available', () => definir({ estado: 'atualizado' }));
-  autoUpdater.on('update-available', (info) => { versao = info.version; definir({ estado: 'baixando', versao, progresso: 0 }); });
+  autoUpdater.on('update-available', (info) => {
+    versao = info.version;
+    definir(autoUpdater.autoDownload ? { estado: 'baixando', versao, progresso: 0 } : { estado: 'disponivel', versao });
+  });
   autoUpdater.on('download-progress', (p) => definir({ estado: 'baixando', versao, progresso: Math.max(0, Math.min(1, (p.percent || 0) / 100)) }));
   autoUpdater.on('update-downloaded', (info) => definir({ estado: 'pronta', versao: info.version, notas: notasTexto(info.releaseNotes) }));
   autoUpdater.on('error', (erro) => {
@@ -101,15 +109,22 @@ async function verificar() {
   if (portatil()) await verificarPortatil();
   else {
     try {
-      await obterAtualizador().checkForUpdates();
+      const updater = obterAtualizador();
+      updater.autoDownload = config.interno('atualizacaoAutomatica') !== false;
+      await updater.checkForUpdates();
     } catch { /* o evento 'error' já atualizou o estado */ }
   }
   return atual;
 }
 
 function instalar() {
+  if (atual.estado === 'disponivel' && !portatil() && atualizador) {
+    atualizador.downloadUpdate().catch(() => {});
+    return { ok: true };
+  }
   if (atual.estado === 'pronta' && !portatil() && atualizador) {
-    // reinicia instalando em silêncio; o jogo aberto (processo separado) continua rodando
+    // O popup fica num processo independente enquanto o instalador troca os arquivos do launcher.
+    mostrarInstalacao();
     setImmediate(() => atualizador.quitAndInstall(true, true));
     return { ok: true };
   }
@@ -120,10 +135,94 @@ function instalar() {
   return { ok: false, mensagem: 'Nenhuma atualização pronta.' };
 }
 
-function iniciar() {
-  if (!ativo()) { definir({ estado: 'indisponivel' }); return; }
-  setTimeout(verificar, URL_TESTE ? 1000 : 8000); // não atrasa a abertura do launcher
-  setInterval(verificar, INTERVALO).unref();
+function mostrarInstalacao() {
+  const nome = `tessera-atualizacao-${process.pid}`;
+  const script = path.join(os.tmpdir(), `${nome}.ps1`);
+  const icone = path.join(os.tmpdir(), `${nome}.ico`);
+  const origemIcone = path.join(app.getAppPath(), 'assets', 'icon.ico');
+  try { fs.copyFileSync(origemIcone, icone); } catch {}
+  const conteudo = String.raw`param([int]$OldPid, [string]$ExePath, [string]$IconPath)
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+$form = New-Object Windows.Forms.Form
+$form.Text = 'Tessera Launcher'
+$form.FormBorderStyle = 'FixedDialog'
+$form.StartPosition = 'CenterScreen'
+$form.ClientSize = New-Object Drawing.Size(360, 190)
+$form.MaximizeBox = $false
+$form.MinimizeBox = $false
+$form.ControlBox = $false
+$form.TopMost = $true
+$form.BackColor = [Drawing.Color]::FromArgb(22, 22, 26)
+$form.ForeColor = [Drawing.Color]::White
+if (Test-Path -LiteralPath $IconPath) { try { $form.Icon = New-Object Drawing.Icon($IconPath) } catch {} }
+$logo = New-Object Windows.Forms.PictureBox
+$logo.Size = New-Object Drawing.Size(44, 44)
+$logo.Location = New-Object Drawing.Point(158, 24)
+$logo.SizeMode = 'Zoom'
+if (Test-Path -LiteralPath $IconPath) { try { $logo.Image = [Drawing.Icon]::new($IconPath).ToBitmap() } catch {} }
+$form.Controls.Add($logo)
+$label = New-Object Windows.Forms.Label
+$label.Text = 'Instalando atualização'
+$label.AutoSize = $false
+$label.TextAlign = 'MiddleCenter'
+$label.Font = New-Object Drawing.Font('Segoe UI', 14, [Drawing.FontStyle]::Bold)
+$label.Location = New-Object Drawing.Point(20, 82)
+$label.Size = New-Object Drawing.Size(320, 34)
+$form.Controls.Add($label)
+$bar = New-Object Windows.Forms.ProgressBar
+$bar.Style = 'Marquee'
+$bar.MarqueeAnimationSpeed = 24
+$bar.Location = New-Object Drawing.Point(54, 137)
+$bar.Size = New-Object Drawing.Size(252, 12)
+$form.Controls.Add($bar)
+$started = Get-Date
+$seenNew = $false
+$timer = New-Object Windows.Forms.Timer
+$timer.Interval = 500
+$timer.Add_Tick({
+  if (((Get-Date) - $started).TotalSeconds -ge 120) { $form.Close(); return }
+  $old = Get-Process -Id $OldPid -ErrorAction SilentlyContinue
+  if (-not $old) {
+    $exeName = [IO.Path]::GetFileNameWithoutExtension($ExePath)
+    $new = Get-Process -Name $exeName -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $ExePath }
+    if ($new) { $script:seenNew = $true }
+    if ($script:seenNew) { $form.Close() }
+  }
+})
+$timer.Start()
+$form.Add_Shown({ $form.Activate() })
+[void]$form.ShowDialog()
+$timer.Stop()
+if ($logo.Image) { $logo.Image.Dispose() }
+$form.Dispose()
+Remove-Item -LiteralPath $IconPath -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue`;
+  try {
+    fs.writeFileSync(script, `\uFEFF${conteudo}`, 'utf8');
+    const powershell = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+    const child = spawn(powershell, ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script, String(process.pid), app.getPath('exe'), icone], { detached: true, stdio: 'ignore', windowsHide: true });
+    child.on('error', () => {
+      try { fs.unlinkSync(script); } catch {}
+      try { fs.unlinkSync(icone); } catch {}
+    });
+    child.unref();
+  } catch {
+    try { fs.unlinkSync(script); } catch {}
+    try { fs.unlinkSync(icone); } catch {}
+  }
 }
 
-module.exports = { eventos, iniciar, verificar, instalar, estado: () => atual, maisNova };
+function iniciar() {
+  if (!ativo()) { definir({ estado: 'indisponivel' }); return; }
+  if (config.interno('atualizacaoAutomatica') !== false) setTimeout(verificar, URL_TESTE ? 1000 : 8000); // não atrasa a abertura do launcher
+  setInterval(() => { if (config.interno('atualizacaoAutomatica') !== false) verificar(); }, INTERVALO).unref();
+}
+
+function configuracaoAlterada(antes) {
+  const habilitada = config.interno('atualizacaoAutomatica') !== false;
+  if (atualizador) atualizador.autoDownload = habilitada;
+  if (habilitada && antes === false) verificar();
+}
+
+module.exports = { eventos, iniciar, verificar, instalar, configuracaoAlterada, estado: () => atual, maisNova };

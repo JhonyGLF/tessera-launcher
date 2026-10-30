@@ -19,6 +19,7 @@ const PADRAO = {
   ramMB: RAM_PADRAO,
   javaPersonalizado: null,
   minimizarAoJogar: true,
+  atualizacaoAutomatica: true,
   mostrarSnapshots: false,
   tema: 'sculk',
   instanciaSelecionada: null,
@@ -35,6 +36,7 @@ const VALIDAR = {
     return fs.existsSync(v) ? path.normalize(v) : undefined;
   },
   minimizarAoJogar: (v) => (typeof v === 'boolean' ? v : undefined),
+  atualizacaoAutomatica: (v) => (typeof v === 'boolean' ? v : undefined),
   mostrarSnapshots: (v) => (typeof v === 'boolean' ? v : undefined),
   tema: (v) => (TEMAS.includes(v) ? v : undefined),
   instanciaSelecionada: (v) => (v === null || (typeof v === 'string' && /^[a-z0-9-]{1,64}$/.test(v)) ? v : undefined),

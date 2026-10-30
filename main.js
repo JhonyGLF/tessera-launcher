@@ -148,7 +148,12 @@ handle('atualizacao:instalar', () => atualizacao.instalar());
 
 // ---------- Configurações ----------
 handle('config:ler', () => config.publica());
-handle('config:salvar', (mudancas) => config.salvar(mudancas));
+handle('config:salvar', (mudancas) => {
+  const antes = config.interno('atualizacaoAutomatica');
+  const atual = config.salvar(mudancas);
+  atualizacao.configuracaoAlterada(antes);
+  return atual;
+});
 handle('config:escolherJava', async () => {
   const [arquivo] = await escolherArquivos({
     title: 'Escolha o java.exe ou javaw.exe',

@@ -149,6 +149,9 @@ export default function PaginaConfiguracoes() {
       <${Linha} titulo="Mostrar snapshots" descricao="Inclui as versões de teste do Minecraft ao criar instâncias. Podem ter bugs e corromper mundos.">
         <${Alternador} ligado=${config.mostrarSnapshots} aoMudar=${(v) => salvarConfig({ mostrarSnapshots: v })} rotulo=${config.mostrarSnapshots ? 'Ligado' : 'Desligado'} />
       <//>
+      <${Linha} titulo="Atualização automática" descricao="Procura, baixa e prepara atualizações do launcher em segundo plano. Desligada, você pode verificar e baixar em Sobre.">
+        <${Alternador} ligado=${config.atualizacaoAutomatica} aoMudar=${(v) => salvarConfig({ atualizacaoAutomatica: v })} rotulo=${config.atualizacaoAutomatica ? 'Ligado' : 'Desligado'} />
+      <//>
       <${Linha} titulo="Pasta de dados" descricao="Onde ficam as instâncias, versões baixadas, bibliotecas e o Java.">
         <${Botao} icone="pasta" aoClicar=${() => api.abrirPastaRaiz()}>Abrir pasta<//>
       <//>
