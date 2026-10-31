@@ -2,7 +2,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { api } from '../api.js';
 import { useEstado, salvarConfig } from '../estado.js';
-import { Botao, Icone, Cartao, Alternador, Deslizador, Etiqueta, toast } from '../componentes/index.js';
+import { Botao, Icone, Cartao, Alternador, Deslizador, Etiqueta, Select, toast } from '../componentes/index.js';
 import { formatarRam, cls } from '../util.js';
 
 const TEMAS = [
@@ -143,6 +143,12 @@ export default function PaginaConfiguracoes() {
     <//>
 
     <${Grupo} icone="engrenagem" titulo="Launcher">
+      <${Linha} titulo="Idioma" descricao="Escolha o idioma usado nos menus e nas configurações do launcher.">
+        <${Select} valor=${config.idioma || 'pt-BR'} opcoes=${[
+          { valor: 'pt-BR', rotulo: 'Português (Brasil)' },
+          { valor: 'en-US', rotulo: 'English (US)' },
+        ]} aoMudar=${(v) => salvarConfig({ idioma: v })} rotulo="Idioma" largura=${190} />
+      <//>
       <${Linha} titulo="Minimizar ao jogar" descricao="Esconde o launcher enquanto o jogo está aberto e o traz de volta quando você fecha.">
         <${Alternador} ligado=${config.minimizarAoJogar} aoMudar=${(v) => salvarConfig({ minimizarAoJogar: v })} rotulo=${config.minimizarAoJogar ? 'Ligado' : 'Desligado'} />
       <//>
@@ -174,6 +180,7 @@ export default function PaginaConfiguracoes() {
           <li><strong>Pixelify Sans</strong> — Copyright The Pixelify Sans Project Authors. SIL Open Font License 1.1.</li>
           <li><strong>VT323</strong> — Copyright Peter Hull. SIL Open Font License 1.1.</li>
           <li><strong>Preact</strong> e <strong>htm</strong> — Licença MIT.</li>
+          <li><strong>skinview3d</strong> — Licença MIT.</li>
         </ul>
         <button type="button" class="link" onClick=${() => api.abrirLink('https://openfontlicense.org')}>
           Ler a SIL Open Font License <${Icone} nome="link" tamanho=${16} />

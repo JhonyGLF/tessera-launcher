@@ -170,6 +170,19 @@ handle('contas:adicionarOffline', (nome) => contas.adicionarOffline(nome));
 handle('contas:remover', (id) => contas.remover(id));
 handle('contas:selecionar', (id) => contas.selecionar(id));
 handle('contas:skin', (id) => contas.skin(id));
+handle('contas:alterarSkin', (id, imagemBase64, variante) => contas.alterarSkin(id, imagemBase64, variante));
+handle('contas:escolherSkin', async () => {
+  const ingles = config.interno('idioma') === 'en-US';
+  const [arquivo] = await escolherArquivos({
+    title: ingles ? 'Choose a Minecraft skin PNG' : 'Escolha uma skin PNG',
+    filters: [{ name: ingles ? 'Minecraft skin' : 'Skin do Minecraft', extensions: ['png'] }],
+    properties: ['openFile'],
+  });
+  if (!arquivo) return null;
+  const dados = fs.readFileSync(arquivo);
+  if (dados.length > 2 * 1024 * 1024) return { ok: false, mensagem: 'A imagem deve ter até 2 MB.' };
+  return { ok: true, nome: path.basename(arquivo), imagem: dados.toString('base64') };
+});
 
 // ---------- Versões do Minecraft e loaders ----------
 handle('versoes:listarMc', () => versoes.listarMc());

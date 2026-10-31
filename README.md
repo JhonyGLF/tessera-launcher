@@ -23,7 +23,8 @@ Feito com Electron; a interface usa Preact + htm (sem etapa de build).
   Dynamic FPS), pulando o que não existe para a versão ou conflita com o OptiFine.
 - **Joga sem internet**: com o jogo e o Java já baixados, abre normalmente offline.
 - **Mundos** e **log ao vivo** do jogo (com filtro, copiar e pasta de logs).
-- **Contas**: várias contas Microsoft e contas offline, com troca rápida.
+- **Contas**: várias contas Microsoft e offline, troca rápida e alteração de skin com prévia 3D.
+- **Idioma**: interface em Português (Brasil) ou Inglês, configurável no launcher.
 - **Visual**: 5 temas de cor (Sculk, Grama, Ametista, Nether, Gelo), notícias oficiais do Minecraft na tela inicial.
 
 ### Contas offline

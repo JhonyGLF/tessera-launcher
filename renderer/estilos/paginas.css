@@ -296,6 +296,21 @@
 .conta-acoes { display: flex; align-items: center; gap: 10px; }
 .conta-ativa-texto { display: inline-flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 13px; color: var(--destaque); }
 
+/* Editor de skin da conta Microsoft */
+.modal-skin .modal-corpo { padding-top: 0; }
+.editor-skin { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 22px; align-items: start; }
+.skin-previa { width: 280px; height: 340px; overflow: hidden; background: #17171e; box-shadow: var(--px-contorno); }
+.skin-previa canvas { display: block; width: 280px; height: 340px; touch-action: none; }
+.skin-controles { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; padding: 8px 0; }
+.skin-explicacao { font-size: 13px; line-height: 1.5; color: var(--texto-2); }
+.skin-controles .rotulo-campo { margin: 2px 0 -8px; }
+.skin-arquivo { display: flex; align-items: center; gap: 8px; max-width: 100%; font-size: 12.5px; color: var(--ok); }
+.skin-arquivo svg { flex: none; }
+.skin-arquivo { overflow-wrap: anywhere; }
+.skin-dimensoes { font-size: 12px; color: var(--texto-3); }
+.skin-aviso { padding: 10px 12px; background: rgba(0, 0, 0, 0.22); color: var(--texto-2); font-size: 12px; line-height: 1.5; }
+.skin-erro { padding: 10px 12px; background: rgba(255, 92, 92, 0.12); color: var(--vermelho); font-size: 12.5px; line-height: 1.45; }
+
 .contas-vazio .vazio { padding: 36px 24px 40px; }
 .contas-sobre { display: flex; gap: 16px; padding: 16px 18px; }
 .contas-sobre-icone {
@@ -454,6 +469,12 @@
 }
 .tema-marca svg { width: 14px; height: 14px; }
 .tema-nome { font-family: var(--fonte-pixel); font-size: 13px; font-weight: 500; }
+
+@media (max-width: 620px) {
+  .editor-skin { grid-template-columns: 1fr; gap: 16px; }
+  .skin-previa, .skin-previa canvas { width: 100%; height: 280px; }
+  .skin-controles { padding: 0; }
+}
 
 /* sobre */
 .sobre { display: flex; align-items: center; gap: 26px; padding: 20px 0 16px; }

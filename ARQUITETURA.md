@@ -110,11 +110,14 @@ adicionar uma conta Microsoft que tenha o Minecraft: Java Edition. Nome offline:
 `UUID.nameUUIDFromBytes`). Contas Microsoft: refresh token criptografado com `safeStorage`.
 `contas.sessao(id?)` → `{ tipo, nome, uuid, token, xuid }` (para offline: token `'0'`, xuid `''`),
 renovando o token Microsoft se venceu. Lança Error com mensagem PT-BR se não houver conta.
+`contas.alterarSkin(id, pngBase64, variante)` valida uma skin PNG e a envia ao perfil Minecraft
+autenticado; a prévia 3D é renderizada localmente no launcher.
 
 ### Config (`config.publica()`)
 ```js
 { ramMB: 4096, ramMaxMB: 16384, javaPersonalizado: null|'C:\\...\\javaw.exe',
-  minimizarAoJogar: true, mostrarSnapshots: false,
+  minimizarAoJogar: true, mostrarSnapshots: false, atualizacaoAutomatica: true,
+  idioma: 'pt-BR'|'en-US',
   tema: 'sculk'|'grama'|'ametista'|'nether'|'gelo',
   instanciaSelecionada: null|id, ordemInstancias: 'recentes'|'nome' }
 ```

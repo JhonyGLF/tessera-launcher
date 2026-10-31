@@ -7,6 +7,7 @@ const os = require('os');
 
 const TEMAS = ['sculk', 'grama', 'ametista', 'nether', 'gelo'];
 const ORDENS = ['recentes', 'nome'];
+const IDIOMAS = ['pt-BR', 'en-US'];
 const MB_TOTAL = Math.floor(os.totalmem() / 1048576);
 
 // Máximo de RAM que dá para escolher: a RAM do PC (em blocos de 512 MB)
@@ -20,6 +21,7 @@ const PADRAO = {
   javaPersonalizado: null,
   minimizarAoJogar: true,
   atualizacaoAutomatica: true,
+  idioma: 'pt-BR',
   mostrarSnapshots: false,
   tema: 'sculk',
   instanciaSelecionada: null,
@@ -37,6 +39,7 @@ const VALIDAR = {
   },
   minimizarAoJogar: (v) => (typeof v === 'boolean' ? v : undefined),
   atualizacaoAutomatica: (v) => (typeof v === 'boolean' ? v : undefined),
+  idioma: (v) => (IDIOMAS.includes(v) ? v : undefined),
   mostrarSnapshots: (v) => (typeof v === 'boolean' ? v : undefined),
   tema: (v) => (TEMAS.includes(v) ? v : undefined),
   instanciaSelecionada: (v) => (v === null || (typeof v === 'string' && /^[a-z0-9-]{1,64}$/.test(v)) ? v : undefined),
@@ -115,4 +118,4 @@ function definirInterno(mudancas) {
   gravar(dados);
 }
 
-module.exports = { ler, publica, salvar, interno, definirInterno, RAM_MAX, RAM_MIN, TEMAS };
+module.exports = { ler, publica, salvar, interno, definirInterno, RAM_MAX, RAM_MIN, TEMAS, IDIOMAS };

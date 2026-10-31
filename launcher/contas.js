@@ -280,7 +280,51 @@ async function skin(id) {
   }
 }
 
+async function alterarSkin(id, base64, variante) {
+  const dados = ler();
+  const conta = dados.contas.find((c) => c.id === id && c.tipo === 'msa');
+  if (!conta) return { ok: false, mensagem: 'Selecione uma conta Microsoft para trocar a skin.' };
+  if (typeof base64 !== 'string' || base64.length > 3 * 1024 * 1024 || !['classic', 'slim'].includes(variante)) {
+    return { ok: false, mensagem: 'Arquivo de skin inválido.' };
+  }
+  let imagem;
+  try { imagem = Buffer.from(base64, 'base64'); } catch { return { ok: false, mensagem: 'Arquivo de skin inválido.' }; }
+  if (imagem.length < 32 || imagem.length > 2 * 1024 * 1024 || !imagem.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) {
+    return { ok: false, mensagem: 'Escolha uma imagem PNG válida de skin.' };
+  }
+  const largura = imagem.readUInt32BE(16);
+  const altura = imagem.readUInt32BE(20);
+  if (largura !== 64 || ![32, 64].includes(altura)) {
+    return { ok: false, mensagem: 'A skin precisa ter 64×64 ou 64×32 pixels.' };
+  }
+
+  const sessaoAtual = await sessao(id);
+  const formulario = new FormData();
+  formulario.append('variant', variante);
+  formulario.append('file', new Blob([imagem], { type: 'image/png' }), 'skin.png');
+  const resposta = await fetch('https://api.minecraftservices.com/minecraft/profile/skins', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${sessaoAtual.token}` },
+    body: formulario,
+    signal: AbortSignal.timeout(30000),
+  });
+  if (resposta.status === 401) return { ok: false, mensagem: 'A sessão Minecraft expirou. Entre novamente com sua conta Microsoft.' };
+  if (resposta.status === 403) return { ok: false, mensagem: 'Esta conta não pode alterar a skin do Minecraft Java.' };
+  if (resposta.status === 429) return { ok: false, mensagem: 'Muitas alterações de skin em pouco tempo. Tente novamente mais tarde.' };
+  if (!resposta.ok) return { ok: false, mensagem: 'O serviço do Minecraft não aceitou essa skin. Confira o arquivo e tente novamente.' };
+
+  const perfil = await resposta.json().catch(() => null);
+  const skinAtiva = perfil && Array.isArray(perfil.skins) && perfil.skins.find((s) => s.state === 'ACTIVE');
+  if (skinAtiva && skinAtiva.url) {
+    const atualizado = ler();
+    const salva = atualizado.contas.find((c) => c.id === id);
+    if (salva) { salva.skinUrl = skinAtiva.url; gravar(atualizado); }
+  }
+  skins.delete(conta.uuid);
+  return { ok: true };
+}
+
 module.exports = {
-  listar, adicionarMicrosoft, adicionarOffline, remover, selecionar, sessao, skin,
+  listar, adicionarMicrosoft, adicionarOffline, remover, selecionar, sessao, skin, alterarSkin,
   uuidOffline, traduzir,
 };

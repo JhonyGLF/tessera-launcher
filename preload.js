@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld('jg', {
   removerConta: chamar('contas:remover'),
   selecionarConta: chamar('contas:selecionar'),
   skinConta: chamar('contas:skin'),
+  escolherSkin: chamar('contas:escolherSkin'),
+  alterarSkin: chamar('contas:alterarSkin'),
 
   // Versões e loaders
   listarVersoesMc: chamar('versoes:listarMc'),

@@ -8,12 +8,14 @@ import { api } from './api.js';
 import { lista } from './util.js';
 import { toast } from './componentes/toasts.js';
 import { navegar } from './rotas.js';
+import { aplicarIdioma as aplicarIdiomaUI } from './i18n.js';
 
 export const estado = {
   pronto: false,          // terminou a primeira carga
   info: { versao: '', raiz: '' },
   config: {
     ramMB: 4096, ramMaxMB: 8192, javaPersonalizado: null, minimizarAoJogar: true, mostrarSnapshots: false,
+    atualizacaoAutomatica: true, idioma: 'pt-BR',
     tema: 'sculk', instanciaSelecionada: null, ordemInstancias: 'recentes',
   },
   contas: [],             // [{ id, tipo: 'msa'|'offline', nome, uuid }]
@@ -65,20 +67,30 @@ export function aplicarTema(tema) {
   try { localStorage.setItem('jg-tema', tema || 'sculk'); } catch {}
 }
 
+export function aplicarIdioma(idioma) {
+  aplicarIdiomaUI(idioma || 'pt-BR');
+}
+
 // ---------- Cargas ----------
 export async function recarregarConfig() {
   const c = await api.lerConfig();
-  if (c && c.ok !== false) { definir({ config: { ...estado.config, ...c } }); aplicarTema(estado.config.tema); }
+  if (c && c.ok !== false) {
+    definir({ config: { ...estado.config, ...c } });
+    aplicarTema(estado.config.tema);
+    aplicarIdioma(estado.config.idioma);
+  }
 }
 
 export async function salvarConfig(mudancas) {
   const anterior = estado.config;
   definir({ config: { ...estado.config, ...mudancas } });
   if ('tema' in mudancas) aplicarTema(mudancas.tema);
+  if ('idioma' in mudancas) aplicarIdioma(mudancas.idioma);
   const r = await api.salvarConfig(mudancas);
   if (r && r.ok === false) {
     definir({ config: anterior });
     aplicarTema(anterior.tema);
+    aplicarIdioma(anterior.idioma);
     toast(r.mensagem || 'Não foi possível salvar.', { tipo: 'erro' });
     return false;
   }
@@ -99,6 +111,13 @@ export async function recarregarContas() {
       definir({ skins: { ...estado.skins, [c.id]: url } });
     });
   }
+}
+
+export async function recarregarSkin(id) {
+  const s = await api.skinConta(id);
+  const url = typeof s === 'string' ? s : s && (s.dataUrl || s.skin || s.url) || null;
+  definir({ skins: { ...estado.skins, [id]: url } });
+  return url;
 }
 
 export async function recarregarInstancias() {

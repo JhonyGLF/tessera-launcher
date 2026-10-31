@@ -1,10 +1,10 @@
 // Contas: Microsoft e offline. Política igual à do Prism Launcher: contas offline só
 // depois de adicionar uma conta Microsoft que tenha o Minecraft: Java Edition.
-import { html, useState } from '../vendor/preact-htm.js';
+import { html, useEffect, useRef, useState } from '../vendor/preact-htm.js';
 import { api } from '../api.js';
-import { useEstado, recarregarContas } from '../estado.js';
+import { useEstado, recarregarContas, recarregarSkin } from '../estado.js';
 import {
-  Botao, Icone, LogoMicrosoft, Cartao, CabecaSkin, Etiqueta, Modal, CampoTexto, Vazio, confirmar, toast,
+  Botao, Icone, LogoMicrosoft, Cartao, CabecaSkin, Etiqueta, Modal, CampoTexto, Select, Vazio, confirmar, toast,
 } from '../componentes/index.js';
 import { cls } from '../util.js';
 
@@ -13,6 +13,84 @@ const EXPLICACAO_OFFLINE = 'Para criar contas offline, adicione antes uma conta 
 
 // 32 hex → 8-4-4-4-12
 const formatarUuid = (u) => (u && /^[0-9a-f]{32}$/i.test(u) ? u.replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5') : u || '');
+
+function ModalSkin({ conta, skinAtual, aoFechar }) {
+  const canvas = useRef(null);
+  const [arquivo, setArquivo] = useState(null);
+  const [variante, setVariante] = useState('classic');
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  useEffect(() => {
+    if (!conta || !canvas.current || !window.skinview3d) return;
+    const viewer = new window.skinview3d.SkinViewer({ canvas: canvas.current, width: 280, height: 340 });
+    viewer.background = 0x17171e;
+    viewer.zoom = 0.9;
+    viewer.autoRotate = true;
+    const url = arquivo
+      ? `data:image/png;base64,${arquivo.imagem}`
+      : skinAtual || null;
+    const carregar = url
+      ? viewer.loadSkin(url, { model: variante === 'slim' ? 'slim' : 'default' })
+      : Promise.resolve();
+    carregar.catch(() => setErro('Não foi possível carregar essa skin na prévia.'));
+    return () => viewer.dispose();
+  }, [conta && conta.id, arquivo && arquivo.imagem, variante, skinAtual]);
+
+  const escolher = async () => {
+    setErro('');
+    const r = await api.escolherSkin();
+    if (!r) return;
+    if (r.ok === false) { setErro(r.mensagem); return; }
+    try {
+      const img = new Image();
+      img.src = `data:image/png;base64,${r.imagem}`;
+      await img.decode();
+      if (img.width !== 64 || ![32, 64].includes(img.height)) {
+        setErro('A skin precisa ter 64×64 ou 64×32 pixels.');
+        return;
+      }
+      setArquivo(r);
+    } catch {
+      setErro('Escolha um arquivo PNG válido.');
+    }
+  };
+
+  const aplicar = async () => {
+    if (!arquivo || carregando) return;
+    setCarregando(true);
+    setErro('');
+    const r = await api.alterarSkin(conta.id, arquivo.imagem, variante);
+    setCarregando(false);
+    if (!r || r.ok === false) { setErro((r && r.mensagem) || 'Não foi possível alterar a skin.'); return; }
+    await recarregarSkin(conta.id);
+    toast('Skin atualizada na conta Microsoft.', { tipo: 'ok' });
+    aoFechar();
+  };
+
+  return html`<${Modal} aberto=${!!conta} titulo=${`Skin de ${conta ? conta.nome : ''}`} aoFechar=${aoFechar} largura=${700} class="modal-skin"
+    rodape=${html`
+      <${Botao} aoClicar=${aoFechar}>Cancelar<//>
+      <${Botao} variante="principal" icone="ok" carregando=${carregando} desabilitado=${!arquivo} aoClicar=${aplicar}>Aplicar skin<//>
+    `}>
+    <div class="editor-skin">
+      <div class="skin-previa"><canvas ref=${canvas} width="280" height="340" aria-label="Prévia 3D da skin"></canvas></div>
+      <div class="skin-controles">
+        <p class="skin-explicacao">Escolha um PNG para ver como fica. Arraste o personagem para girar a prévia.</p>
+        <${Botao} icone="pasta" aoClicar=${escolher}>Escolher arquivo PNG<//>
+        ${arquivo && html`<p class="skin-arquivo"><${Icone} nome="ok" tamanho=${16} />${arquivo.nome}</p>`}
+        <label class="rotulo-campo" for="skin-modelo">Modelo do jogador</label>
+        <${Select} valor=${variante} opcoes=${[
+          { valor: 'classic', rotulo: 'Steve · braço normal' },
+          { valor: 'slim', rotulo: 'Alex · braço fino' },
+        ]} aoMudar=${setVariante} rotulo="Modelo da skin" largura=${250} />
+        <p class="skin-dimensoes">PNG 64×64 ou 64×32 · até 2 MB</p>
+        <p class="skin-aviso">Aplicar altera a skin desta conta Microsoft no Minecraft Java.</p>
+        ${erro && html`<p class="skin-erro" role="alert">${erro}</p>`}
+      </div>
+    </div>
+  <//>`;
+}
 
 function validarNome(nome) {
   if (!nome) return null;
@@ -70,7 +148,7 @@ function ModalOffline({ aberto, aoFechar }) {
   <//>`;
 }
 
-function CartaoConta({ conta, ativa, skin }) {
+function CartaoConta({ conta, ativa, skin, aoEditarSkin }) {
   const [ocupado, setOcupado] = useState(false);
   const msa = conta.tipo === 'msa';
 
@@ -116,6 +194,7 @@ function CartaoConta({ conta, ativa, skin }) {
       </button>
     </div>
     <div class="conta-acoes">
+      ${msa && html`<${Botao} tamanho="p" icone="editar" aoClicar=${aoEditarSkin}>Alterar skin<//>`}
       ${ativa
         ? html`<span class="conta-ativa-texto"><${Icone} nome="jogar" tamanho=${16} /> Conta usada para jogar</span>`
         : html`<${Botao} carregando=${ocupado} aoClicar=${selecionar}>Usar esta conta<//>`}
@@ -130,6 +209,7 @@ export default function PaginaContas() {
   }));
   const [entrando, setEntrando] = useState(false);
   const [offlineAberto, setOfflineAberto] = useState(false);
+  const [skinConta, setSkinConta] = useState(null);
 
   const entrarMicrosoft = async () => {
     setEntrando(true);
@@ -157,7 +237,8 @@ export default function PaginaContas() {
   const grupo = (titulo, lista, sub) => lista.length > 0 && html`<section class="secao contas-grupo">
     <div class="secao-cabeca"><h2>${titulo}</h2><span class="sub">${sub}</span></div>
     <div class="lista-contas">
-      ${lista.map((c) => html`<${CartaoConta} key=${c.id} conta=${c} ativa=${c.id === contaAtiva} skin=${skins[c.id]} />`)}
+      ${lista.map((c) => html`<${CartaoConta} key=${c.id} conta=${c} ativa=${c.id === contaAtiva} skin=${skins[c.id]}
+        aoEditarSkin=${() => setSkinConta(c)} />`)}
     </div>
   </section>`;
 
@@ -200,5 +281,6 @@ export default function PaginaContas() {
     </section>
 
     <${ModalOffline} aberto=${offlineAberto} aoFechar=${() => setOfflineAberto(false)} />
+    <${ModalSkin} conta=${skinConta} skinAtual=${skinConta && skins[skinConta.id]} aoFechar=${() => setSkinConta(null)} />
   </div>`;
 }

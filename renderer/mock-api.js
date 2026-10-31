@@ -147,6 +147,8 @@ Object.assign(jg, {
     return { ok: true };
   },
   skinConta: async (id) => { await latencia(200); return SKINS[id] || null; },
+  escolherSkin: async () => null,
+  alterarSkin: async () => ({ ok: true }),
 });
 
 // ---------- Versões e loaders ----------
